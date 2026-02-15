@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Earning App Pro</title>
+
+<!-- Adsterra Popunder -->
+<script src="https://pl28721831.effectivegatecpm.com/1c/b1/38/1cb138209d61c0fae7baad1c3b2c9d7b.js"></script>
+
+<style>
+body{font-family:Arial;margin:0;background:#111;color:#fff}
+header{background:#1e1e1e;padding:15px;text-align:center;font-size:20px}
+section{padding:15px}
+button{padding:10px;margin:5px;border:none;background:#00c853;color:#fff;border-radius:5px}
+input{padding:8px;margin:5px;width:90%}
+.card{background:#1e1e1e;padding:15px;margin:10px 0;border-radius:8px}
+</style>
+</head>
+<body>
+
+<header>Earning App Pro</header>
+
+<!-- Adsterra Banner -->
+<div style="text-align:center;margin-top:10px;">
+<script>
+atOptions = {
+'key' : 'fc197ad9c7c3213e06e1baeee7861024',
+'format' : 'iframe',
+'height' : 50,
+'width' : 320,
+'params' : {}
+};
+</script>
+<script src="https://www.highperformanceformat.com/fc197ad9c7c3213e06e1baeee7861024/invoke.js"></script>
+</div>
+
+<section id="auth">
+<h3>Signup / Login</h3>
+<input type="email" id="email" placeholder="Email">
+<input type="password" id="password" placeholder="Password">
+<input type="text" id="refInput" placeholder="Referral Code (Optional)">
+<button onclick="signup()">Signup</button>
+<button onclick="login()">Login</button>
+</section>
+
+<section id="dashboard" style="display:none;">
+
+<div class="card">
+<h3>Wallet</h3>
+<p>Coins: <span id="coins">0</span></p>
+<p>INR: ₹<span id="inr">0</span></p>
+<p>Your Referral Code: <span id="myRef"></span></p>
+</div>
+
+<div class="card">
+<h3>Quiz (30/day)</h3>
+<p id="question"></p>
+<button onclick="answer(true)">True</button>
+<button onclick="answer(false)">False</button>
+<p id="quizStatus"></p>
+</div>
+
+<div class="card">
+<h3>Spin (20/day)</h3>
+<button onclick="spin()">Spin</button>
+<p id="spinResult"></p>
+</div>
+
+<div class="card">
+<h3>Scratch (20/day)</h3>
+<button onclick="scratch()">Scratch</button>
+<p id="scratchResult"></p>
+</div>
+
+<div class="card">
+<h3>Withdraw (Min 1000 Coins)</h3>
+<input type="text" id="upi" placeholder="Enter UPI ID">
+<button onclick="withdraw()">Withdraw</button>
+<p id="withdrawStatus"></p>
+</div>
+
+<button onclick="logout()">Logout</button>
+</section>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.22.2/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut }
+from "https://www.gstatic.com/firebasejs/9.22.2/firebase-auth.js";
+import { getFirestore, doc, setDoc, getDoc, updateDoc, collection, query, where, getDocs }
+from "https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore.js";
+
+const firebaseConfig = {
+apiKey: "AIzaSyDRSMYk4EQYN2wVRH_0MVaseBFO6v0zaxk",
+authDomain: "earning-app-eff29.firebaseapp.com",
+projectId: "earning-app-eff29",
+storageBucket: "earning-app-eff29.firebasestorage.app",
+messagingSenderId: "283531541732",
+appId: "1:283531541732:web:e4a939752c2b75aa8fc0f1"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth();
+const db = getFirestore();
+
+let currentUser;
+let userData;
+
+function today(){
+return new Date().toISOString().split("T")[0];
+}
+
+async function dailyReset(){
+if(userData.lastActiveDate !== today()){
+userData.quizCount=0;
+userData.spinCount=0;
+userData.scratchCount=0;
+userData.lastActiveDate=today();
+await updateDoc(doc(db,"users",currentUser.uid),{
+quizCount:0,spinCount:0,scratchCount:0,lastActiveDate:today()
+});
+}
+}
+
+window.signup = async function(){
+const email=document.getElementById("email").value;
+const pass=document.getElementById("password").value;
+const refCode=document.getElementById("refInput").value;
+
+const res=await createUserWithEmailAndPassword(auth,email,pass);
+currentUser=res.user;
+
+const myRef=currentUser.uid.substring(0,6);
+
+await setDoc(doc(db,"users",currentUser.uid),{
+coins:0,
+quizCount:0,
+spinCount:0,
+scratchCount:0,
+lastActiveDate:today(),
+referralCode:myRef
+});
+
+if(refCode){
+const q=query(collection(db,"users"),where("referralCode","==",refCode));
+const snap=await getDocs(q);
+snap.forEach(async d=>{
+await updateDoc(doc(db,"users",d.id),{
+coins:d.data().coins+50
+});
+});
+}
+
+loadUser();
+}
+
+window.login = async function(){
+const email=document.getElementById("email").value;
+const pass=document.getElementById("password").value;
+const res=await signInWithEmailAndPassword(auth,email,pass);
+currentUser=res.user;
+loadUser();
+}
+
+async function loadUser(){
+const snap=await getDoc(doc(db,"users",currentUser.uid));
+userData=snap.data();
+await dailyReset();
+document.getElementById("auth").style.display="none";
+document.getElementById("dashboard").style.display="block";
+updateWallet();
+document.getElementById("myRef").innerText=userData.referralCode;
+newQuestion();
+}
+
+function updateWallet(){
+document.getElementById("coins").innerText=userData.coins;
+document.getElementById("inr").innerText=(userData.coins/100).toFixed(2);
+}
+
+function addCoins(amount){
+userData.coins+=amount;
+updateDoc(doc(db,"users",currentUser.uid),{coins:userData.coins});
+updateWallet();
+}
+
+function newQuestion(){
+document.getElementById("question").innerText="5 + 5 = 10 ?";
+}
+
+window.answer=function(ans){
+if(userData.quizCount>=30){document.getElementById("quizStatus").innerText="Limit Over";return;}
+userData.quizCount++;
+updateDoc(doc(db,"users",currentUser.uid),{quizCount:userData.quizCount});
+if(ans===true){addCoins(10);document.getElementById("quizStatus").innerText="Correct +10";}
+else{document.getElementById("quizStatus").innerText="Wrong";}
+}
+
+window.spin=function(){
+if(userData.spinCount>=20){return;}
+userData.spinCount++;
+updateDoc(doc(db,"users",currentUser.uid),{spinCount:userData.spinCount});
+let rewards=[5,10,15,20,25,30];
+let r=rewards[Math.floor(Math.random()*rewards.length)];
+addCoins(r);
+document.getElementById("spinResult").innerText="Won "+r+" coins";
+}
+
+window.scratch=function(){
+if(userData.scratchCount>=20){return;}
+userData.scratchCount++;
+updateDoc(doc(db,"users",currentUser.uid),{scratchCount:userData.scratchCount});
+let r=Math.floor(Math.random()*21)+5;
+addCoins(r);
+document.getElementById("scratchResult").innerText="Scratch "+r+" coins";
+}
+
+window.withdraw=function(){
+if(userData.coins<1000){
+document.getElementById("withdrawStatus").innerText="Minimum 1000 coins required";
+return;
+}
+updateDoc(doc(db,"users",currentUser.uid),{coins:userData.coins-1000});
+document.getElementById("withdrawStatus").innerText="Withdraw Requested";
+}
+
+window.logout=function(){
+signOut(auth);
+location.reload();
+}
+</script>
+
+</body>
+  </html>
+                                   
